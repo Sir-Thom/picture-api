@@ -2,6 +2,7 @@ package main
 
 import (
 	"Api-Picture/controllers"
+	"Api-Picture/docs"
 	_ "Api-Picture/docs"
 	"Api-Picture/models"
 	"Api-Picture/repositories"
@@ -12,14 +13,13 @@ import (
 	"log"
 )
 
-//	@title			Picture API
-//	@version		2.0
-//	@description	picture API
-// @host		127.0.0.1:8080
-// @BasePath	/api/v1
-
+// @license: Apache 2.0
 func main() {
-
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.Title = "Picture API"
+	docs.SwaggerInfo.Description = "picture API"
 	db, err := models.Database()
 	if err != nil {
 		log.Println(err)
@@ -45,7 +45,6 @@ func main() {
 	// integer swagger
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	ginSwagger.URL("http://127.0.0.1/swagger/doc.json")
 
-	log.Fatal(router.Run("127.0.0.1:8080"))
+	log.Fatal(router.Run(":8080"))
 }

@@ -1,9 +1,84 @@
-basePath: /api/v1
-host: 127.0.0.1:8080
+definitions:
+  models.Pictures:
+    properties:
+      added_date:
+        type: string
+      data:
+        items:
+          type: integer
+        type: array
+      filename:
+        type: string
+      id:
+        type: integer
+    type: object
 info:
   contact: {}
-  description: picture API
-  title: Picture API
-  version: "2.0"
-paths: {}
+paths:
+  /pictures:
+    get:
+      consumes:
+      - application/json
+      description: Get all pictures
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Pictures'
+      summary: Get all pictures
+      tags:
+      - pictures
+  /pictures/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get picture by id
+      parameters:
+      - description: Picture ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Pictures'
+      summary: Get picture by id
+      tags:
+      - pictures
+  /pictures/count:
+    get:
+      consumes:
+      - application/json
+      description: Count pictures
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Count pictures
+      tags:
+      - pictures
+  /pictures/paginated:
+    get:
+      consumes:
+      - application/json
+      description: Get pictures paginated
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Pictures'
+      summary: Get pictures paginated
+      tags:
+      - pictures
 swagger: "2.0"
