@@ -38,8 +38,7 @@ func (pr *PictureRepository) GetPicturesAfterID(lastSeenID int, limit int) ([]mo
 }
 
 func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int) ([]models.Pictures, error) {
-
 	var pictures []models.Pictures
-	err := pr.DB.Limit(limit).Offset(lastSeenID).Find(&pictures).Error
+	err := pr.DB.Order("id").Limit(limit).Where("id > ?", lastSeenID).Find(&pictures).Error
 	return pictures, err
 }

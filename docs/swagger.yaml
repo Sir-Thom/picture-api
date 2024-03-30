@@ -71,6 +71,17 @@ paths:
       consumes:
       - application/json
       description: Get pictures paginated
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 12
+        description: Limit per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:

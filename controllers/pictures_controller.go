@@ -6,6 +6,7 @@ import (
 	_ "github.com/swaggo/gin-swagger"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type PictureController struct {
@@ -84,9 +85,14 @@ func (pc *PictureController) CountPicture(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200 {object}	models.Pictures
+//	@Param			page query int false "Page number" default(1)
+//	@Param			limit query int false "Limit per page"	default(12)
 //	@Router			/pictures/paginated [get]
 func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
-	pictures, err := pc.Service.GetPicturesPaginated(0, 12)
+	lastSeenID, _ := strconv.Atoi(ctx.DefaultQuery("lastSeenID", "0"))
+	limit := 12
+
+	pictures, err := pc.Service.GetPicturesPaginated(lastSeenID, limit)
 	if err != nil {
 		log.Println(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
