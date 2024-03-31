@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"Api-Picture/models"
+	"fmt"
 	"github.com/patrickmn/go-cache"
 	"gorm.io/gorm"
 	"time"
@@ -38,8 +39,34 @@ func (pr *PictureRepository) Count() (int64, error) {
 	return count, err
 }
 
-func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int) ([]models.Pictures, error) {
+func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, batchSize int) ([]models.Pictures, error) {
+	// Generate a unique cache key based on lastSeenID, limit, and batchSize
+	cacheKey := fmt.Sprintf("paginated_pictures_%d_%d_%d", lastSeenID, limit, batchSize)
+
+	// Check if the paginated pictures are cached
+	if pictures, found := pr.Cache.Get(cacheKey); found {
+		return pictures.([]models.Pictures), nil
+	}
+
 	var pictures []models.Pictures
-	err := pr.DB.Order("id").Limit(limit).Where("id > ?", lastSeenID).Find(&pictures).Error
-	return pictures, err
+
+	// Fetch multiple pages (or a batch) of images in a single query
+	for offset := 0; len(pictures) < batchSize; offset += limit {
+		var batch []models.Pictures
+		err := pr.DB.Order("id").Limit(limit).Offset(offset).Where("id > ?", lastSeenID).Find(&batch).Error
+		if err != nil {
+			return nil, err
+		}
+		if len(batch) == 0 {
+			// No more pictures available
+			break
+		}
+		pictures = append(pictures, batch...)
+		lastSeenID = batch[len(batch)-1].ID // Update lastSeenID for the next batch
+	}
+
+	// Cache the paginated pictures
+	pr.Cache.Set(cacheKey, pictures, cache.DefaultExpiration)
+
+	return pictures, nil
 }

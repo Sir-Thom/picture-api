@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"Api-Picture/services"
+	"compress/gzip"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	_ "github.com/swaggo/gin-swagger"
 	"log"
@@ -90,6 +92,7 @@ func (pc *PictureController) CountPicture(ctx *gin.Context) {
 //	@Router			/pictures/paginated [get]
 func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
 	// Get query parameters for lastSeenID and limit
+
 	lastSeenID, err := strconv.Atoi(ctx.Query("last_seen_id"))
 	if err != nil {
 		// Handle error, or set default value if not provided
@@ -108,5 +111,24 @@ func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, pictures)
+
+	// Compress response using gzip
+	gz := gzip.NewWriter(ctx.Writer)
+	defer func(gz *gzip.Writer) {
+		err := gz.Close()
+		if err != nil {
+			// Handle error
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+		}
+	}(gz)
+
+	ctx.Writer.Header().Set("Content-Encoding", "gzip")
+	ctx.Writer.Header().Set("Content-Type", "application/json")
+
+	// Serialize pictures to JSON and write to the compressed response
+	if err := json.NewEncoder(gz).Encode(pictures); err != nil {
+		// Handle error
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 }
