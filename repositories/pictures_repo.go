@@ -40,9 +40,6 @@ func (pr *PictureRepository) Count() (int64, error) {
 
 func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int) ([]models.Pictures, error) {
 	var pictures []models.Pictures
-	if pictures, found := pr.Cache.Get("paginated_pictures"); found {
-		return pictures.([]models.Pictures), nil
-	}
 	err := pr.DB.Order("id").Limit(limit).Where("id > ?", lastSeenID).Find(&pictures).Error
 	return pictures, err
 }

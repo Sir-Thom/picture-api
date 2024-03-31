@@ -85,12 +85,22 @@ func (pc *PictureController) CountPicture(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200 {object}	models.Pictures
-//	@Param			page query int false "Page number" default(1)
+//	@Param			last_seen_id query int false "Page number" default(1)
 //	@Param			limit query int false "Limit per page"	default(12)
 //	@Router			/pictures/paginated [get]
 func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
-	lastSeenID, _ := strconv.Atoi(ctx.DefaultQuery("lastSeenID", "0"))
-	limit := 12
+	// Get query parameters for lastSeenID and limit
+	lastSeenID, err := strconv.Atoi(ctx.Query("last_seen_id"))
+	if err != nil {
+		// Handle error, or set default value if not provided
+		lastSeenID = 0
+	}
+
+	limit, err := strconv.Atoi(ctx.Query("limit"))
+	if err != nil {
+		// Handle error, or set default value if not provided
+		limit = 12
+	}
 
 	pictures, err := pc.Service.GetPicturesPaginated(lastSeenID, limit)
 	if err != nil {
