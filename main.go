@@ -24,9 +24,12 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
+	gin.SetMode(gin.ReleaseMode)
 	db.DB()
 
 	router := gin.Default()
+	// cors middleware
+	router.Use(CORSMiddleware())
 
 	v1 := router.Group("/api/v1")
 	{
@@ -43,8 +46,26 @@ func main() {
 
 	}
 	// integer swagger
-
+	err = db.AutoMigrate(&models.Pictures{})
+	if err != nil {
+		panic(err)
+	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	log.Fatal(router.Run(":8080"))
+}
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }

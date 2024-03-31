@@ -25,11 +25,6 @@ func (ps *PictureService) CountPictures() (int64, error) {
 	return ps.Repo.Count()
 }
 
-func (ps *PictureService) GetPicturesAfterID(lastSeenID int, limit int) ([]models.Pictures, error) {
-
-	return ps.Repo.GetPicturesAfterID(lastSeenID, limit)
-}
-
 func (ps *PictureService) GetPicturesPaginated(lastSeenID int, limit int) ([]models.Pictures, error) {
 	return ps.Repo.GetPicturesPaginated(lastSeenID, limit)
 }
