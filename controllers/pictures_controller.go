@@ -111,6 +111,10 @@ func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	if len(pictures) == 0 {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "No pictures found"})
+		return
+	}
 
 	// Compress response using gzip
 	gz := gzip.NewWriter(ctx.Writer)
