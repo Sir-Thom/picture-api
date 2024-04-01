@@ -71,12 +71,6 @@ func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, bat
 		}
 		if len(newPage) > 0 {
 			pictures = append(pictures, newPage...)
-		} else {
-			lastImage, err := pr.GetById(fmt.Sprintf("%d", lastSeenID-limit))
-			if err != nil {
-				return nil, err
-			}
-			pictures = append(pictures, lastImage)
 		}
 	}
 
