@@ -43,7 +43,6 @@ func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, bat
 	// Generate a unique cache key based on lastSeenID, limit, and batchSize
 	cacheKey := fmt.Sprintf("paginated_pictures_%d_%d_%d", lastSeenID, limit, batchSize)
 
-	// Check if the paginated pictures are cached
 	if pictures, found := pr.Cache.Get(cacheKey); found {
 		return pictures.([]models.Pictures), nil
 	}
@@ -57,27 +56,22 @@ func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, bat
 		if err != nil {
 			return nil, err
 		}
-		// If no more pictures are found, break the loop
 		if len(batch) == 0 {
 			break
 		}
 		pictures = append(pictures, batch...)
-		lastSeenID = batch[len(batch)-1].ID // Update lastSeenID for the next batch
+		lastSeenID = batch[len(batch)-1].ID
 	}
 
-	// If there are more than zero but less than the limit pictures left, create a new page with the last picture
 	if len(pictures) > 0 && len(pictures) < limit {
 		lastPicture := pictures[len(pictures)-1]
-		fmt.Println("Last Picture ID:", lastPicture.ID) // Log lastPicture.ID
 		newPage, err := pr.GetPicturesPaginated(lastPicture.ID, limit, batchSize)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("New Page Length:", len(newPage)) // Log length of newPage
 		if len(newPage) > 0 {
 			pictures = append(pictures, newPage...)
 		} else {
-			// Fetch the last image using the last seen ID and append it to the list of pictures
 			lastImage, err := pr.GetById(fmt.Sprintf("%d", lastSeenID-limit))
 			if err != nil {
 				return nil, err
@@ -86,7 +80,6 @@ func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, bat
 		}
 	}
 
-	// Cache the paginated pictures
 	pr.Cache.Set(cacheKey, pictures, cache.DefaultExpiration)
 
 	return pictures, nil
