@@ -4,9 +4,11 @@ import (
 	"Api-Picture/controllers"
 	"Api-Picture/docs"
 	_ "Api-Picture/docs"
+	"Api-Picture/middlewares"
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
+	"Api-Picture/utils"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -26,15 +28,24 @@ func main() {
 	}
 	gin.SetMode(gin.ReleaseMode)
 	db.DB()
+	utils.CronJob()
 
 	router := gin.Default()
 	// cors middleware
-	router.Use(CORSMiddleware())
+	router.Use(middlewares.CORSMiddleware())
+	// jwt middleware
+	//router.Use(middlewares.JWTAuthMiddleware(db, "secret"))
 
 	v1 := router.Group("/api/v1")
 	{
+		signin := v1.Group("/signup")
+		{
+			userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
+			signin.POST("/register", userController.SignUp)
+		}
 
-		picture := v1.Group("/pictures")
+		picture := v1.Group(
+			"/pictures")
 		{
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))

@@ -75,7 +75,7 @@ paths:
       - default: 1
         description: Page number
         in: query
-        name: page
+        name: last_seen_id
         type: integer
       - default: 12
         description: Limit per page
@@ -92,4 +92,32 @@ paths:
       summary: Get pictures paginated
       tags:
       - pictures
+  /signup/register:
+    post:
+      consumes:
+      - application/json
+      description: Sign up
+      parameters:
+      - description: Email
+        in: body
+        name: email
+        required: true
+        schema:
+          type: string
+      - description: Password
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Sign up
+      tags:
+      - users
 swagger: "2.0"
