@@ -11,7 +11,7 @@ func init() {
 
 func CronJob() {
 	c := cron.New()
-	err := c.AddFunc("1 * * * *", UpdateDb)
+	err := c.AddFunc("@hourly", UpdateDb)
 	log.Println("CronJob started")
 	if err != nil {
 		return
