@@ -17,6 +17,7 @@ import (
 
 // @license: Apache 2.0
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 	docs.SwaggerInfo.Host = "localhost:8080"
@@ -26,9 +27,16 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
-	gin.SetMode(gin.ReleaseMode)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Cron job panicked: %v", r)
+			}
+		}()
+		utils.CronJob()
+	}()
+
 	db.DB()
-	utils.CronJob()
 
 	router := gin.Default()
 	// cors middleware
@@ -61,7 +69,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	if gin.Mode() == gin.ReleaseMode {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	log.Fatal(router.Run(":8080"))
 }

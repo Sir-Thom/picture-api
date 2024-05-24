@@ -38,6 +38,7 @@ func UpdateDb() {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		log.Fatalf("Error reading directory: %v", err)
+
 	}
 
 	for _, file := range files {
@@ -73,6 +74,7 @@ func getDatabasePictures(db *gorm.DB, dbFilenames *[]string) {
 	db.Find(&pictures)
 
 	for _, pic := range pictures {
+		log.Println(pic.Filename)
 		*dbFilenames = append(*dbFilenames, pic.Filename)
 	}
 }
