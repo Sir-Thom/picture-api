@@ -132,6 +132,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/signup/detail": {
+            "get": {
+                "description": "Get user by email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user by email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email",
+                        "name": "email",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/signup/register": {
             "post": {
                 "description": "Sign up",
@@ -158,6 +190,15 @@ const docTemplate = `{
                     {
                         "description": "Password",
                         "name": "password",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Username",
+                        "name": "username",
                         "in": "body",
                         "required": true,
                         "schema": {

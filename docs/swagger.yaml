@@ -92,6 +92,27 @@ paths:
       summary: Get pictures paginated
       tags:
       - pictures
+  /signup/detail:
+    get:
+      consumes:
+      - application/json
+      description: Get user by email
+      parameters:
+      - description: Email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Get user by email
+      tags:
+      - users
   /signup/register:
     post:
       consumes:
@@ -107,6 +128,12 @@ paths:
       - description: Password
         in: body
         name: password
+        required: true
+        schema:
+          type: string
+      - description: Username
+        in: body
+        name: username
         required: true
         schema:
           type: string
