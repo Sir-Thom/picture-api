@@ -40,6 +40,11 @@ const docTemplate = `{
         },
         "/pictures/count": {
             "get": {
+                "security": [
+                    {
+                        "API key auth": []
+                    }
+                ],
                 "description": "Count pictures",
                 "consumes": [
                     "application/json"
@@ -102,6 +107,14 @@ const docTemplate = `{
         },
         "/pictures/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    },
+                    {
+                        "API key auth": []
+                    }
+                ],
                 "description": "Get picture by id",
                 "consumes": [
                     "application/json"
@@ -132,11 +145,11 @@ const docTemplate = `{
                 }
             }
         },
-        "/signup/detail": {
-            "get": {
-                "description": "Get user by email",
+        "/signin": {
+            "post": {
+                "description": "Sign in",
                 "consumes": [
-                    "application/json"
+                    "application/x-www-form-urlencoded"
                 ],
                 "produces": [
                     "application/json"
@@ -144,13 +157,20 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Get user by email",
+                "summary": "Sign in",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Email",
                         "name": "email",
-                        "in": "query",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password",
+                        "name": "password",
+                        "in": "formData",
                         "required": true
                     }
                 ],
@@ -168,7 +188,7 @@ const docTemplate = `{
             "post": {
                 "description": "Sign up",
                 "consumes": [
-                    "application/json"
+                    "application/x-www-form-urlencoded"
                 ],
                 "produces": [
                     "application/json"
@@ -179,31 +199,25 @@ const docTemplate = `{
                 "summary": "Sign up",
                 "parameters": [
                     {
+                        "type": "string",
                         "description": "Email",
                         "name": "email",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData",
+                        "required": true
                     },
                     {
+                        "type": "string",
                         "description": "Password",
                         "name": "password",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData",
+                        "required": true
                     },
                     {
+                        "type": "string",
                         "description": "Username",
                         "name": "username",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -237,6 +251,13 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "API key auth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

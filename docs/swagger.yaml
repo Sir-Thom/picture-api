@@ -48,6 +48,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Pictures'
+      security:
+      - Bearer: []
+      - API key auth: []
       summary: Get picture by id
       tags:
       - pictures
@@ -63,6 +66,8 @@ paths:
           description: OK
           schema:
             type: integer
+      security:
+      - API key auth: []
       summary: Count pictures
       tags:
       - pictures
@@ -92,15 +97,20 @@ paths:
       summary: Get pictures paginated
       tags:
       - pictures
-  /signup/detail:
-    get:
+  /signin:
+    post:
       consumes:
-      - application/json
-      description: Get user by email
+      - application/x-www-form-urlencoded
+      description: Sign in
       parameters:
       - description: Email
-        in: query
+        in: formData
         name: email
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
         required: true
         type: string
       produces:
@@ -110,33 +120,30 @@ paths:
           description: ok
           schema:
             type: string
-      summary: Get user by email
+      summary: Sign in
       tags:
       - users
   /signup/register:
     post:
       consumes:
-      - application/json
+      - application/x-www-form-urlencoded
       description: Sign up
       parameters:
       - description: Email
-        in: body
+        in: formData
         name: email
         required: true
-        schema:
-          type: string
+        type: string
       - description: Password
-        in: body
+        in: formData
         name: password
         required: true
-        schema:
-          type: string
+        type: string
       - description: Username
-        in: body
+        in: formData
         name: username
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses:
@@ -147,4 +154,9 @@ paths:
       summary: Sign up
       tags:
       - users
+securityDefinitions:
+  API key auth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

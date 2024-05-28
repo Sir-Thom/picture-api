@@ -44,10 +44,14 @@ func (pc *PictureController) GetPictures(ctx *gin.Context) {
 //	@Summary		Get picture by id
 //	@Description	Get picture by id
 //	@Tags			pictures
+//	@Security		Bearer
 //	@Accept			json
 //	@Produce		json
 //	@Param			id path string true "Picture ID"
 //	@Success		200	{object}	models.Pictures
+//
+// @Security API key auth
+//
 //	@Router			/pictures/{id} [get]
 func (pc *PictureController) GetPictureById(ctx *gin.Context) {
 	id := ctx.Param("id")
@@ -69,6 +73,8 @@ func (pc *PictureController) GetPictureById(ctx *gin.Context) {
 //	@Produce		json
 //	@Success		200	{object}	int64
 //	@Router			/pictures/count [get]
+//
+// @Security API key auth
 func (pc *PictureController) CountPicture(ctx *gin.Context) {
 	count, err := pc.Service.CountPictures()
 	if err != nil {

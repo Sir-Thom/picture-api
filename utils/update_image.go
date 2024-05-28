@@ -3,7 +3,6 @@ package utils
 import (
 	"Api-Picture/models"
 	"github.com/joho/godotenv"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,50 +13,68 @@ import (
 )
 
 func UpdateDb() {
-	var folderFilenames []string
-	var dbFilenames []string
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovering from panic: %v", r)
+			}
+		}()
 
-	//read environment variable from .env file
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatalf("Error loading .env file: %v", err)
+		}
 
-	path := os.Getenv("FOLDER_PATH")
+		path := os.Getenv("FOLDER_PATH")
 
-	db, err := models.Database()
+		db, err := models.Database()
+		if err != nil {
+			log.Fatalf("Error connecting to database: %v", err)
+		}
 
-	err = db.AutoMigrate(&models.Pictures{})
-	if err != nil {
-		return
-	}
+		err = db.AutoMigrate(&models.Pictures{})
+		if err != nil {
+			log.Fatalf("Error migrating database: %v", err)
+		}
 
-	getFilesInFolder(path, &folderFilenames)
-	getDatabasePictures(db, &dbFilenames)
+		var folderFilenames, dbFilenames []string
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			getFilesInFolder(path, &folderFilenames)
+		}()
+		go func() {
+			defer close(done)
+			getDatabasePictures(db, &dbFilenames)
+		}()
 
-	files, err := os.ReadDir(path)
-	if err != nil {
-		log.Fatalf("Error reading directory: %v", err)
+		for i := 0; i < 2; i++ {
+			<-done
+		}
 
-	}
+		files, err := os.ReadDir(path)
+		if err != nil {
+			log.Fatalf("Error reading directory: %v", err)
+		}
 
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".jpg") || strings.HasSuffix(file.Name(), ".png") || strings.HasSuffix(file.Name(), ".webp") || strings.HasSuffix(file.Name(), ".jpeg") || strings.HasSuffix(file.Name(), ".gif") {
-			if contains(dbFilenames, file.Name()) {
-				updatePicture(db, path, file)
-			} else {
-				insertPicture(db, path, file)
+		for _, file := range files {
+			if strings.HasSuffix(file.Name(), ".jpg") || strings.HasSuffix(file.Name(), ".png") || strings.HasSuffix(file.Name(), ".webp") || strings.HasSuffix(file.Name(), ".jpeg") || strings.HasSuffix(file.Name(), ".gif") {
+				if contains(dbFilenames, file.Name()) {
+					go updatePicture(db, path, file)
+				} else {
+					go insertPicture(db, path, file)
+				}
 			}
 		}
-	}
 
-	deletePicturesNotInFolder(db, dbFilenames, folderFilenames)
+		go deletePicturesNotInFolder(db, dbFilenames, folderFilenames)
 
-	log.Println("Update completed")
+		log.Println("Database update started")
+	}()
 }
 
 func getFilesInFolder(path string, folderFilenames *[]string) {
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		log.Fatalf("Error reading directory: %v", err)
 	}
@@ -79,17 +96,8 @@ func getDatabasePictures(db *gorm.DB, dbFilenames *[]string) {
 	}
 }
 
-func contains(slice []string, str string) bool {
-	for _, s := range slice {
-		if s == str {
-			return true
-		}
-	}
-	return false
-}
-
 func updatePicture(db *gorm.DB, path string, file os.DirEntry) {
-	data, err := ioutil.ReadFile(filepath.Join(path, file.Name()))
+	data, err := os.ReadFile(filepath.Join(path, file.Name()))
 	if err != nil {
 		log.Printf("Error reading file %s: %v", file.Name(), err)
 		return
@@ -103,7 +111,7 @@ func updatePicture(db *gorm.DB, path string, file os.DirEntry) {
 }
 
 func insertPicture(db *gorm.DB, path string, file os.DirEntry) {
-	data, err := ioutil.ReadFile(filepath.Join(path, file.Name()))
+	data, err := os.ReadFile(filepath.Join(path, file.Name()))
 	if err != nil {
 		log.Printf("Error reading file %s: %v", file.Name(), err)
 		return
@@ -123,4 +131,13 @@ func deletePicturesNotInFolder(db *gorm.DB, dbFilenames []string, folderFilename
 			db.Where("filename = ?", dbFilename).Delete(&models.Pictures{})
 		}
 	}
+}
+
+func contains(slice []string, str string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

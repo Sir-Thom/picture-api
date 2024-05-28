@@ -14,12 +14,11 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 func (ur *UserRepository) SignUp(user models.User) error {
-	err := ur.DB.Create(&user).Error
-	return err
+	return ur.DB.Create(&user).Error
 }
 
-func (ur *UserRepository) SignIn(user models.User) (models.User, error) {
-	var u models.User
-	err := ur.DB.Where("email = ? AND password = ?", user.Email, user.Password).First(&u).Error
-	return u, err
+func (ur *UserRepository) Login(email string) (models.User, error) {
+	var user models.User
+	err := ur.DB.Where("email = ?", email).First(&user).Error
+	return user, err
 }

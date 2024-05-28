@@ -16,6 +16,17 @@ import (
 )
 
 // @license: Apache 2.0
+// @BasePath: /api/v1
+// @Schemes: http, https
+// @title: Picture API
+// @description: picture API
+// @host: localhost:8080
+// @version: 1.0.0
+// add swagger token bearer
+// @securityDefinitions.apikey  API key auth
+// @in header
+// @name Authorization
+// @tokenUrl http://localhost:8080/api/v1/signin
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	docs.SwaggerInfo.BasePath = "/api/v1"
@@ -27,34 +38,29 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("Cron job panicked: %v", r)
-			}
-		}()
-		utils.CronJob()
-	}()
 
 	db.DB()
 
 	router := gin.Default()
 	// cors middleware
 	router.Use(middlewares.CORSMiddleware())
-	// jwt middleware
-	//router.Use(middlewares.JWTAuthMiddleware(db, "secret"))
-
+	utils.CronJob()
 	v1 := router.Group("/api/v1")
 	{
-		signin := v1.Group("/signup")
+		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
+		signup := v1.Group("/signup")
 		{
-			userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
-			signin.POST("/register", userController.SignUp)
+			signup.POST("/register", userController.SignUp)
+		}
+		signin := v1.Group("/signin")
+		{
+			signin.POST("", userController.SignIn)
 		}
 
-		picture := v1.Group(
-			"/pictures")
+		picture := v1.Group("/pictures")
 		{
+			// let only authenticated user to access this endpoint
+			//picture.Use(middlewares.JWTAuthMiddleware(db))
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))
 			picture.GET("", pictureController.GetPictures)
@@ -62,8 +68,8 @@ func main() {
 			picture.GET("/count", pictureController.CountPicture)
 			picture.GET("/paginated", pictureController.GetPicturesPaginated)
 		}
-
 	}
+
 	// integer swagger
 	err = db.AutoMigrate(&models.Pictures{})
 	if err != nil {
