@@ -12,31 +12,52 @@ type UserController struct {
 
 func NewUserController(service *services.UserService) *UserController {
 	return &UserController{service: service}
-
 }
 
 // SignUp godoc
-//
-// @Summary		Sign up
-// @Description	Sign up
-// @Tags			users
-// @Accept			json
-// @Produce		json
-// @Param			email body string true "Email"
-// @Param			password body string true "Password"
-// @Param			username body string true "Username"
-// @Success		200 {string} string	"ok"
-// @Router			/signup/register [post]
+// @Summary Sign up
+// @Description Sign up
+// @Tags users
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Param email formData string true "Email"
+// @Param password formData string true "Password"
+// @Param username formData string true "Username"
+// @Success 200 {string} string "ok"
+// @Router /signup/register [post]
 func (uc *UserController) SignUp(ctx *gin.Context) {
-
 	email := ctx.PostForm("email")
 	password := ctx.PostForm("password")
 	username := ctx.PostForm("username")
-	err, _ := uc.service.SignUp(email, password, username)
+
+	err, token := uc.service.SignUp(email, password, username)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "token": token})
+}
+
+// SignIn godoc
+// @Summary Sign in
+// @Description Sign in
+// @Tags users
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Param email formData string true "Email"
+// @Param password formData string true "Password"
+// @Success 200 {string} string "ok"
+// @Router /signin [post]
+func (uc *UserController) SignIn(ctx *gin.Context) {
+	email := ctx.PostForm("email")
+	password := ctx.PostForm("password")
+
+	err, token := uc.service.SignIn(email, password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "token": token})
 }

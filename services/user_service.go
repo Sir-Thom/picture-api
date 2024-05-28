@@ -4,7 +4,8 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"github.com/dgrijalva/jwt-go"
-	"log"
+	"golang.org/x/crypto/bcrypt"
+	"os"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type JWTService struct {
 	SecretKey       string
 	TokenExpiration time.Duration
 }
+
 type UserService struct {
 	Repo *repositories.UserRepository
 }
@@ -20,27 +22,50 @@ func NewUserService(repo *repositories.UserRepository) *UserService {
 	return &UserService{Repo: repo}
 }
 
-func (us *UserService) SignUp(email, password, username string) (error, error) {
+func (us *UserService) SignUp(email, password, username string) (error, string) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err, ""
+	}
+
 	user := models.User{
-		ID:       int(time.Now().Unix()),
 		Email:    email,
 		Username: username,
-		Password: password,
+		Password: string(hashedPassword),
 	}
-	w := NewJWTService("secret", time.Hour)
-	log.Println(w)
-	err := us.Repo.SignUp(user)
-	if err != nil {
-		return err, nil
-	}
-	token, err := w.GenerateToken(user.ID)
-	if err != nil {
-		return err, nil
 
+	err = us.Repo.SignUp(user)
+	if err != nil {
+		return err, ""
 	}
-	log.Println(token)
-	return nil, nil
 
+	jwtService := NewJWTService(os.Getenv("SECRET_KEY"), time.Hour)
+	token, err := jwtService.GenerateToken(user.ID)
+	if err != nil {
+		return err, ""
+	}
+
+	return nil, token
+}
+
+func (us *UserService) SignIn(email, password string) (error, string) {
+	user, err := us.Repo.Login(email)
+	if err != nil {
+		return err, ""
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return err, ""
+	}
+
+	jwtService := NewJWTService(os.Getenv("SECRET_KEY"), time.Hour)
+	token, err := jwtService.GenerateToken(user.ID)
+	if err != nil {
+		return err, ""
+	}
+
+	return nil, token
 }
 
 func NewJWTService(secretKey string, tokenExpiration time.Duration) *JWTService {
@@ -57,7 +82,6 @@ func (j *JWTService) GenerateToken(userID int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Println(tokenString)
 	return tokenString, nil
 }
 
@@ -72,7 +96,5 @@ func (j *JWTService) ValidateToken(tokenString string) (*jwt.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return token, nil
-
 }
