@@ -8,7 +8,6 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
-	"Api-Picture/utils"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -44,7 +43,6 @@ func main() {
 	router := gin.Default()
 	// cors middleware
 	router.Use(middlewares.CORSMiddleware())
-	utils.CronJob()
 	v1 := router.Group("/api/v1")
 	{
 		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
