@@ -3,7 +3,7 @@ package services
 import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"time"

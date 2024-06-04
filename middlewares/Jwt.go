@@ -3,8 +3,8 @@ package middlewares
 import (
 	"Api-Picture/models"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 	"log"
