@@ -40,7 +40,7 @@ func main() {
 
 	router := gin.Default()
 	// cors middleware
-	router.Use(middlewares.CORSMiddleware())
+	//router.Use(middlewares.CORSMiddleware())
 	v1 := router.Group("/api/v1")
 	{
 		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
@@ -56,7 +56,7 @@ func main() {
 		picture := v1.Group("/pictures")
 		{
 			// let only authenticated user to access this endpoint
-			//picture.Use(middlewares.JWTAuthMiddleware(db))
+			picture.Use(middlewares.JWTAuthMiddleware(db))
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))
 			picture.GET("", pictureController.GetPictures)
