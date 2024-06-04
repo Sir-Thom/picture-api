@@ -19,7 +19,6 @@ import (
 // @Schemes: http, https
 // @title: Picture API
 // @description: picture API
-// @host: localhost:8080
 // @version: 1.0.0
 // add swagger token bearer
 // @securityDefinitions.apikey  API key auth
@@ -27,10 +26,9 @@ import (
 // @name Authorization
 // @tokenUrl http://localhost:8080/api/v1/signin
 func main() {
-	gin.SetMode(gin.ReleaseMode)
+
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
-	docs.SwaggerInfo.Host = "localhost:8080"
 	docs.SwaggerInfo.Title = "Picture API"
 	docs.SwaggerInfo.Description = "picture API"
 	db, err := models.Database()
@@ -42,7 +40,7 @@ func main() {
 
 	router := gin.Default()
 	// cors middleware
-	router.Use(middlewares.CORSMiddleware())
+	//router.Use(middlewares.CORSMiddleware())
 	v1 := router.Group("/api/v1")
 	{
 		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
@@ -58,7 +56,7 @@ func main() {
 		picture := v1.Group("/pictures")
 		{
 			// let only authenticated user to access this endpoint
-			//picture.Use(middlewares.JWTAuthMiddleware(db))
+			picture.Use(middlewares.JWTAuthMiddleware(db))
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))
 			picture.GET("", pictureController.GetPictures)
@@ -73,9 +71,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if gin.Mode() == gin.ReleaseMode {
-		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	}
 
-	log.Fatal(router.Run(":8080"))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	log.Println(router.Run(":8080"))
 }

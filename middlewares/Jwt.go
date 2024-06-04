@@ -27,6 +27,7 @@ func JWTAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		authorizationHeader := c.GetHeader("Authorization")
 		if authorizationHeader == "" {
+			log.Println("Authorization header is missing")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
@@ -71,6 +72,8 @@ func JWTAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		log.Println("User ID extracted from token:", userID)
 
 		var user models.User
 		if err := db.First(&user, uint(userID)).Error; err != nil {

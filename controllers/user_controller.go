@@ -58,6 +58,7 @@ func (uc *UserController) SignIn(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
+	ctx.SetCookie("token", token, 3600, "/", "localhost", false, true)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "token": token})
 }
