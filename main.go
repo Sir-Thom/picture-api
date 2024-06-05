@@ -12,8 +12,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
-	"net/http"
-	"strings"
 )
 
 // @license: Apache 2.0
@@ -41,31 +39,14 @@ func main() {
 	db.DB()
 
 	router := gin.Default()
-	router.Use(func(c *gin.Context) {
-		// Check if the request is for the Swagger UI
-		if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
-			// Allow requests to the Swagger UI without authentication
-			c.Next()
-			return
-		}
-
-		// Check if the user is authenticated
-		token, err := c.Cookie("token")
-		if err != nil || token == "" {
-			// User is not logged in, redirect to the login page
-			c.Redirect(http.StatusFound, "/signin")
-			c.Abort()
-			return
-		}
-		// User is logged in, continue with the request
-		c.Next()
-	})
 
 	// cors middleware
-	//router.Use(middlewares.CORSMiddleware())
+	router.Use(middlewares.CORSMiddleware())
+	router.Use(middlewares.JWTAuthMiddleware(db))
 
 	v1 := router.Group("/api/v1")
 	{
+
 		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
 		signup := v1.Group("/signup")
 		{
@@ -74,12 +55,12 @@ func main() {
 		signin := v1.Group("/signin")
 		{
 			signin.POST("", userController.SignIn)
+
 		}
 
 		picture := v1.Group("/pictures")
 		{
 			// let only authenticated user to access this endpoint
-			picture.Use(middlewares.JWTAuthMiddleware(db))
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))
 			picture.GET("", pictureController.GetPictures)
