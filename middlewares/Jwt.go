@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -26,18 +25,16 @@ func JWTAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		secretKey := os.Getenv("SECRET_KEY")
 
-		authorizationHeader := c.GetHeader("Authorization")
-		if authorizationHeader == "" {
-			log.Println("Authorization header is missing")
+		// get cookie token
+		cookieToken, _ := c.Cookie("token")
+		if cookieToken == "" {
+			log.Println("No token found in cookie")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
 
-		tokenString := strings.Replace(authorizationHeader, "Bearer ", "", 1)
-		log.Println("Received JWT token:", tokenString)
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(cookieToken, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -66,8 +63,9 @@ func JWTAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Check if the token has expired
-		if exp, ok := claims["exp"].(float64); !ok || time.Unix(int64(exp), 0).Before(time.Now()) {
+		// Check expiration time
+		expTime := time.Unix(int64(claims["exp"].(float64)), 0)
+		if time.Now().After(expTime) {
 			log.Println("JWT token has expired")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
