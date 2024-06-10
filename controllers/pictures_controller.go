@@ -110,10 +110,20 @@ func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
 		// Handle error, or set default value if not provided
 		limit = 12
 	}
-
+	err = ctx.BindQuery(&lastSeenID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	err = ctx.BindQuery(&limit)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	pictures, err := pc.Service.GetPicturesPaginated(lastSeenID, limit)
 	if err != nil {
 		log.Println(err)
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -141,4 +151,5 @@ func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+	ctx.Status(http.StatusOK)
 }

@@ -4,6 +4,7 @@ import (
 	"Api-Picture/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 type UserController struct {
@@ -59,7 +60,8 @@ func (uc *UserController) SignIn(ctx *gin.Context) {
 		return
 	}
 
-	ctx.SetCookie("token", token, 3600, "/", "localhost", false, true)
+	expirationTime := time.Now().Add(90 * 24 * time.Hour) // 90 days
+	ctx.SetCookie("token", token, int(expirationTime.Unix()), "/", "localhost", false, true)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "token": token})
 }
