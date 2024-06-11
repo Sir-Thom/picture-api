@@ -76,7 +76,9 @@ func (j *JWTService) GenerateToken(userID int) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = userID
-	claims["exp"] = time.Now().Add(j.TokenExpiration).Unix()
+	// Set expiration time to 90 days
+	expirationTime := time.Now().Add(90 * 24 * time.Hour)
+	claims["exp"] = expirationTime.Unix()
 
 	tokenString, err := token.SignedString([]byte(j.SecretKey))
 	if err != nil {
