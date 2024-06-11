@@ -62,6 +62,5 @@ func (uc *UserController) SignIn(ctx *gin.Context) {
 
 	expirationTime := time.Now().Add(90 * 24 * time.Hour) // 90 days
 	ctx.SetCookie("token", token, int(expirationTime.Unix()), "/", "localhost", false, true)
-
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "token": token})
 }

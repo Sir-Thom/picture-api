@@ -7,7 +7,7 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
-	"github.com/gin-contrib/cors"
+	//"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"time"
+	//"time"
 )
 
 func proxy(c *gin.Context) {
@@ -64,7 +64,7 @@ func main() {
 
 	// Cors middleware
 	router.Use(gin.Recovery())
-	corsConfig := cors.Config{
+	/*corsConfig := cors.Config{
 
 		AllowOrigins:        []string{"http://*"},
 		AllowMethods:        []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
@@ -74,8 +74,8 @@ func main() {
 		AllowWildcard:       true,
 		AllowPrivateNetwork: true,
 		MaxAge:              12 * time.Hour,
-	}
-	router.Use(cors.New(corsConfig))
+	}*/
+	//	router.Use(cors.New(corsConfig))
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
@@ -91,7 +91,7 @@ func main() {
 			signin.POST("", userController.SignIn)
 		}
 
-		picture := v1.Group("pictures", middlewares.JWTAuthMiddleware(db), middlewares.CORSMiddleware(), cors.New(corsConfig))
+		picture := v1.Group("pictures")
 		{
 			picture.Use(middlewares.JWTAuthMiddleware(db))
 
