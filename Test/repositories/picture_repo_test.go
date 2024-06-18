@@ -25,7 +25,7 @@ func setupDB() *gorm.DB {
 
 	// Seed some data for testing
 	for i := 0; i < 1000; i++ {
-		db.Create(&models.Pictures{ID: int(uint(i + 1)), Filename: "image" + strconv.Itoa(i+1) + ".jpg", Data: []byte("data")})
+		db.Create(&models.Pictures{ID: int(uint(i + 1)), Filename: "image" + strconv.Itoa(i+1) + ".jpg", Path: "/path/to/image" + strconv.Itoa(i+1)})
 	}
 
 	return db
