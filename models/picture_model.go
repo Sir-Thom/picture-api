@@ -5,8 +5,9 @@ import (
 )
 
 type Pictures struct {
-	ID        int       `json:"id"`
-	Filename  string    `json:"filename"`
-	Data      []byte    `json:"data"`
+	ID       int    `json:"id"`
+	Filename string `json:"filename"`
+	Path     string `json:"path"`
+	//Data      []byte    `json:"data"`
 	AddedDate time.Time `json:"added_date"`
 }

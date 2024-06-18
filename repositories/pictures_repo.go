@@ -24,7 +24,7 @@ func (pr *PictureRepository) GetAll(limit int) ([]models.Pictures, error) {
 	}
 
 	var pictures []models.Pictures
-	err := pr.DB.Select("id, filename, data").Limit(limit).Find(&pictures).Error
+	err := pr.DB.Select("id, filename, path").Limit(limit).Find(&pictures).Error
 	if err == nil {
 		pr.Cache.Set(cacheKey, pictures, cache.DefaultExpiration)
 	}
@@ -38,7 +38,7 @@ func (pr *PictureRepository) GetById(id string) (models.Pictures, error) {
 	}
 
 	var picture models.Pictures
-	err := pr.DB.Where("id = ?", id).Select("id, filename, data").First(&picture).Error
+	err := pr.DB.Where("id = ?", id).Select("id, filename, path").First(&picture).Error
 	if err == nil {
 		pr.Cache.Set(cacheKey, picture, cache.DefaultExpiration)
 	}

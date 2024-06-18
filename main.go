@@ -7,7 +7,7 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
-	//"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	//"time"
+	"time"
 )
 
 func proxy(c *gin.Context) {
@@ -64,9 +64,9 @@ func main() {
 
 	// Cors middleware
 	router.Use(gin.Recovery())
-	/*corsConfig := cors.Config{
+	corsConfig := cors.Config{
 
-		AllowOrigins:        []string{"http://*"},
+		AllowOrigins:        []string{"http://homeserver","http://*"},
 		AllowMethods:        []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:        []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control", "X-Requested-With"},
 		ExposeHeaders:       []string{"Content-Length"},
@@ -74,8 +74,8 @@ func main() {
 		AllowWildcard:       true,
 		AllowPrivateNetwork: true,
 		MaxAge:              12 * time.Hour,
-	}*/
-	//	router.Use(cors.New(corsConfig))
+	}
+		router.Use(cors.New(corsConfig))
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
@@ -104,7 +104,7 @@ func main() {
 	}
 
 	// Run database migrations
-	err = db.AutoMigrate(&models.Pictures{})
+	err = db.AutoMigrate(&models.Pictures{},&models.User{})
 	if err != nil {
 		panic(err)
 	}
