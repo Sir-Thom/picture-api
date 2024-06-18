@@ -40,7 +40,7 @@ services:
   api:
     image: api:latest
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://homeserver:8080/api/v1/health/ping" ]
+      test: [ "CMD-SHELL", "curl -fs http://api:8080/api/v1/health/ping" ]
       interval: 0s
       timeout: 10s
     restart: always
