@@ -7,34 +7,13 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
-	"github.com/gin-contrib/cors"
+	//"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"time"
+	//"time"
 )
-
-func proxy(c *gin.Context) {
-	remote, err := url.Parse("http://192.168.1.79:8080")
-	if err != nil {
-		panic(err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-	proxy.Director = func(req *http.Request) {
-		req.Header = c.Request.Header
-		req.Host = remote.Host
-		req.URL.Scheme = remote.Scheme
-		req.URL.Host = remote.Host
-		req.URL.Path = c.Param("proxyPath")
-	}
-
-	proxy.ServeHTTP(c.Writer, c.Request)
-}
 
 // @license: Apache 2.0
 // @BasePath: /api/v1
@@ -43,8 +22,6 @@ func proxy(c *gin.Context) {
 // @description: picture API
 // @version: 1.0.0
 // add swagger token bearer
-// @securityDefinitions.apikey  API key auth
-// @in header
 // @name Authorization
 // @tokenUrl http://localhost:8080/api/v1/signin
 func main() {
@@ -64,9 +41,9 @@ func main() {
 
 	// Cors middleware
 	router.Use(gin.Recovery())
-	corsConfig := cors.Config{
+	/*corsConfig := cors.Config{
 
-		AllowOrigins:        []string{"http://homeserver","http://*"},
+		AllowOrigins:        []string{"http://*"},
 		AllowMethods:        []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:        []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control", "X-Requested-With"},
 		ExposeHeaders:       []string{"Content-Length"},
@@ -74,8 +51,8 @@ func main() {
 		AllowWildcard:       true,
 		AllowPrivateNetwork: true,
 		MaxAge:              12 * time.Hour,
-	}
-		router.Use(cors.New(corsConfig))
+	}*/
+	//	router.Use(cors.New(corsConfig))
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
@@ -104,7 +81,7 @@ func main() {
 	}
 
 	// Run database migrations
-	err = db.AutoMigrate(&models.Pictures{},&models.User{})
+	err = db.AutoMigrate(&models.Pictures{})
 	if err != nil {
 		panic(err)
 	}
