@@ -154,9 +154,4 @@ paths:
       summary: Sign up
       tags:
       - users
-securityDefinitions:
-  API key auth:
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"

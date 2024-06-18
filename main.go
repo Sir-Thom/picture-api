@@ -12,29 +12,8 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
 	//"time"
 )
-
-func proxy(c *gin.Context) {
-	remote, err := url.Parse("http://192.168.1.79:8080")
-	if err != nil {
-		panic(err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-	proxy.Director = func(req *http.Request) {
-		req.Header = c.Request.Header
-		req.Host = remote.Host
-		req.URL.Scheme = remote.Scheme
-		req.URL.Host = remote.Host
-		req.URL.Path = c.Param("proxyPath")
-	}
-
-	proxy.ServeHTTP(c.Writer, c.Request)
-}
 
 // @license: Apache 2.0
 // @BasePath: /api/v1
@@ -43,8 +22,6 @@ func proxy(c *gin.Context) {
 // @description: picture API
 // @version: 1.0.0
 // add swagger token bearer
-// @securityDefinitions.apikey  API key auth
-// @in header
 // @name Authorization
 // @tokenUrl http://localhost:8080/api/v1/signin
 func main() {
