@@ -81,14 +81,6 @@ func main() {
 		health := v1.Group("health")
 		{
 			health.GET("ping", func(c *gin.Context) {
-				db, err := models.Database()
-				if err != nil {
-					c.JSON(500, gin.H{
-						"message": "error",
-					})
-					return
-				}
-				db.DB()
 				c.JSON(200, gin.H{
 					"message": "ok",
 				})
