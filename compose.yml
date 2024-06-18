@@ -48,6 +48,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      - /srv/picture-api/.env:/app/.env
       - /var/www/storage/:/app/storage
     depends_on:
       - nginx
