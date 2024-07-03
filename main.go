@@ -36,7 +36,6 @@ func main() {
 	}
 
 	db.DB()
-
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
