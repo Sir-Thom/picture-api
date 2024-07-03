@@ -3,14 +3,36 @@ definitions:
     properties:
       added_date:
         type: string
-      data:
-        items:
-          type: integer
-        type: array
       filename:
         type: string
       id:
         type: integer
+      path:
+        type: string
+    type: object
+  models.Series:
+    properties:
+      folderPath:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      video:
+        items:
+          $ref: '#/definitions/models.Video'
+        type: array
+    type: object
+  models.Video:
+    properties:
+      id:
+        type: integer
+      seriesID:
+        type: integer
+      videoName:
+        type: string
+      videoPath:
+        type: string
     type: object
 info:
   contact: {}
@@ -97,6 +119,45 @@ paths:
       summary: Get pictures paginated
       tags:
       - pictures
+  /series:
+    get:
+      consumes:
+      - application/json
+      description: Get all series
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Series'
+      summary: Get all series
+      tags:
+      - series
+  /series/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get series by name
+      parameters:
+      - description: series name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Series'
+      security:
+      - Bearer: []
+      - API key auth: []
+      summary: Get series by name
+      tags:
+      - series
   /signin:
     post:
       consumes:
@@ -154,4 +215,43 @@ paths:
       summary: Sign up
       tags:
       - users
+  /videos:
+    get:
+      consumes:
+      - application/json
+      description: Get all videos
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Video'
+      summary: Get all videos
+      tags:
+      - videos
+  /videos/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get picture by name
+      parameters:
+      - description: Video name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Video'
+      security:
+      - Bearer: []
+      - API key auth: []
+      summary: Get video by name
+      tags:
+      - videos
 swagger: "2.0"

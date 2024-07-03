@@ -78,9 +78,34 @@ func main() {
 			picture.GET("count", pictureController.CountPicture)
 			picture.GET("paginated", pictureController.GetPicturesPaginated)
 		}
+
+		series := v1.Group("series")
+		{
+			series.Use(middlewares.JWTAuthMiddleware(db))
+			seriesController := controllers.NewSeriesController(services.NewSeriesService(repositories.NewSeriesRepository(db)))
+			series.GET("", seriesController.GetAllSeries)
+			series.GET(":name", seriesController.GetSeriesByName)
+		}
+
+		videos := v1.Group("videos")
+		{
+			videos.Use(middlewares.JWTAuthMiddleware(db))
+			videosController := controllers.NewVideoController(services.NewVideoService(repositories.NewVideoRepository(db)))
+			videos.GET("", videosController.GetAllVideos)
+			videos.GET(":name", videosController.GetVideoByName)
+
+		}
+
 		health := v1.Group("health")
 		{
 			health.GET("ping", func(c *gin.Context) {
+				if err != nil {
+					c.JSON(500, gin.H{
+						"message": "error",
+					})
+					return
+				}
+
 				c.JSON(200, gin.H{
 					"message": "ok",
 				})
@@ -90,7 +115,7 @@ func main() {
 	}
 
 	// Run database migrations
-	err = db.AutoMigrate(&models.Pictures{})
+	err = db.AutoMigrate(&models.Pictures{}, &models.User{}, &models.Series{}, &models.Video{})
 	if err != nil {
 		panic(err)
 	}

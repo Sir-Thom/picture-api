@@ -134,6 +134,69 @@
                 }
             }
         },
+        "/series": {
+            "get": {
+                "description": "Get all series",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "series"
+                ],
+                "summary": "Get all series",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Series"
+                        }
+                    }
+                }
+            }
+        },
+        "/series/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    },
+                    {
+                        "API key auth": []
+                    }
+                ],
+                "description": "Get series by name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "series"
+                ],
+                "summary": "Get series by name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "series name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Series"
+                        }
+                    }
+                }
+            }
+        },
         "/signin": {
             "post": {
                 "description": "Sign in",
@@ -218,6 +281,69 @@
                     }
                 }
             }
+        },
+        "/videos": {
+            "get": {
+                "description": "Get all videos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "videos"
+                ],
+                "summary": "Get all videos",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Video"
+                        }
+                    }
+                }
+            }
+        },
+        "/videos/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    },
+                    {
+                        "API key auth": []
+                    }
+                ],
+                "description": "Get picture by name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "videos"
+                ],
+                "summary": "Get video by name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Video name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Video"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -227,17 +353,51 @@
                 "added_date": {
                     "type": "string"
                 },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "filename": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Series": {
+            "type": "object",
+            "properties": {
+                "folderPath": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "video": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Video"
+                    }
+                }
+            }
+        },
+        "models.Video": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "seriesID": {
+                    "type": "integer"
+                },
+                "videoName": {
+                    "type": "string"
+                },
+                "videoPath": {
+                    "type": "string"
                 }
             }
         }
