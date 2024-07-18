@@ -25,12 +25,13 @@ func (sr *SeriesRepository) GetAllSeries() ([]models.Series, error) {
 
 func (sr *SeriesRepository) GetSeriesByID(id uint) (*models.Series, error) {
 	var series models.Series
-	err := sr.DB.First(&series, id).Error
+	//Preload("Video") is used to load the associated videos of the series
+	err := sr.DB.Preload("Video").First(&series, id).Error
 	return &series, err
 }
 
 func (sr *SeriesRepository) GetSeriesByName(name string) ([]models.Series, error) {
 	var series []models.Series
-	err := sr.DB.Where("name ILIKE ?", "%"+name+"%").Find(&series).Error
+	err := sr.DB.Preload("Video").Where("name ILIKE ?", "%"+name+"%").Find(&series).Error
 	return series, err
 }
