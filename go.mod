@@ -1,6 +1,7 @@
 module Api-Picture
 
-go 1.21
+go 1.23.0
+
 toolchain go1.24.1
 
 require (
@@ -15,7 +16,7 @@ require (
 	golang.org/x/crypto v0.37.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
-	gorm.io/gorm v1.26.0
+	gorm.io/gorm v1.26.1
 )
 
 require (
