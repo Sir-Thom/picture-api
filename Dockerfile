@@ -1,6 +1,6 @@
 # Use a multi-platform base image (ARM and AMD64)
 
-FROM --platform=$BUILDPLATFORM golang:1.21-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 WORKDIR /app
