@@ -7,21 +7,24 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
+
 	//"github.com/gin-contrib/cors"
+	"log"
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"log"
 	//"time"
 )
 
-// @license: Apache 2.0
-// @BasePath: /api/v1
-// @Schemes: http, https
-// @title: Picture API
-// @description: picture API
-// @version: 1.0.0
-// add swagger token bearer
+// @license.name Apache 2.0
+// @BasePath /api/v1
+// @Schemes http https
+// @title Picture API
+// @description Picture and Video API
+// @version 1.1.0
+// @securityDefinitions.apikey BearerAuth
+// @in header
 // @name Authorization
 // @tokenUrl http://localhost:8080/api/v1/signin
 func main() {
