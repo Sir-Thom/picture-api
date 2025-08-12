@@ -10,6 +10,9 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {},
+        "license": {
+            "name": "Apache 2.0"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -60,7 +63,8 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "format": "int64"
                         }
                     }
                 }
@@ -295,7 +299,7 @@ const docTemplate = `{
         },
         "/videos": {
             "get": {
-                "description": "Get all videos",
+                "description": "Get paginated list of videos",
                 "consumes": [
                     "application/json"
                 ],
@@ -305,12 +309,28 @@ const docTemplate = `{
                 "tags": [
                     "videos"
                 ],
-                "summary": "Get all videos",
+                "summary": "Get all videos (paginated)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Video"
+                            "$ref": "#/definitions/controllers.PagedVideoResponse"
                         }
                     }
                 }
@@ -323,10 +343,10 @@ const docTemplate = `{
                         "Bearer": []
                     },
                     {
-                        "API key auth": []
+                        "APIKeyAuth": []
                     }
                 ],
-                "description": "Get picture by name",
+                "description": "Search videos by name with fuzzy matching",
                 "consumes": [
                     "application/json"
                 ],
@@ -336,7 +356,7 @@ const docTemplate = `{
                 "tags": [
                     "videos"
                 ],
-                "summary": "Get video by name",
+                "summary": "Get videos by name (paginated)",
                 "parameters": [
                     {
                         "type": "string",
@@ -344,13 +364,27 @@ const docTemplate = `{
                         "name": "name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Video"
+                            "$ref": "#/definitions/controllers.PagedVideoResponse"
                         }
                     }
                 }
@@ -358,6 +392,37 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controllers.PagedVideoResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Video"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/controllers.PaginationMeta"
+                }
+            }
+        },
+        "controllers.PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.Pictures": {
             "type": "object",
             "properties": {
@@ -398,31 +463,48 @@ const docTemplate = `{
         "models.Video": {
             "type": "object",
             "properties": {
+                "duration_formatted": {
+                    "type": "string"
+                },
+                "file_exists": {
+                    "type": "boolean"
+                },
+                "file_size_formatted": {
+                    "description": "Virtual fields (not stored in DB)",
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
-                "seriesID": {
+                "series_id": {
                     "type": "integer"
                 },
-                "videoName": {
+                "video_name": {
                     "type": "string"
                 },
-                "videoPath": {
+                "video_path": {
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.1.0",
 	Host:             "",
-	BasePath:         "",
-	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	BasePath:         "/api/v1",
+	Schemes:          []string{"http", "https"},
+	Title:            "Picture API",
+	Description:      "Picture and Video API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
