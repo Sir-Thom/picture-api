@@ -1,11 +1,13 @@
 package models
 
 import (
+	"log"
+	"os"
+	"time"
+
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
-	"os"
 )
 
 func Database() (*gorm.DB, error) {
@@ -25,6 +27,15 @@ func Database() (*gorm.DB, error) {
 		log.Println(err)
 		return nil, err
 	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	return db, nil
 }

@@ -2,54 +2,41 @@ package middlewares
 
 import (
 	"Api-Picture/models"
-	"fmt"
+	"Api-Picture/services"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 	"gorm.io/gorm"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
-func JWTAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
+func JWTAuthMiddleware(db *gorm.DB, jwtService *services.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		err := godotenv.Load()
-		if err != nil {
-			log.Println("Error loading .env file:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-			c.Abort()
-			return
+		var tokenString string
+
+		// 1. Try extracting token from the Authorization header
+		authHeader := c.GetHeader("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
 		}
 
-		secretKey := os.Getenv("SECRET_KEY")
+		// 2. Fall back to reading the token from cookie if header was empty
+		if tokenString == "" {
+			tokenString, _ = c.Cookie("token")
+		}
 
-		// get cookie token
-		cookieToken, _ := c.Cookie("token")
-		if cookieToken == "" {
-			log.Println("No token found in cookie")
+		// If neither header nor cookie contains a token, reject
+		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
 
-		token, err := jwt.Parse(cookieToken, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(secretKey), nil
-		})
-
-		if err != nil {
-			log.Println("Error parsing JWT token:", err)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
-			return
-		}
-
-		if !token.Valid {
-			log.Println("Invalid JWT token")
+		// 3. Validate token
+		token, err := jwtService.ValidateToken(tokenString)
+		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
@@ -57,38 +44,34 @@ func JWTAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			log.Println("Error extracting claims from JWT token")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
 
-		// Check expiration time
-		expTime := time.Unix(int64(claims["exp"].(float64)), 0)
-		if time.Now().After(expTime) {
-			log.Println("JWT token has expired")
+		// 4. Verify expiration
+		expClaim, ok := claims["exp"].(float64)
+		if !ok || time.Now().After(time.Unix(int64(expClaim), 0)) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
 
+		// 5. Extract user_id and load user from DB
 		userID, ok := claims["user_id"].(float64)
 		if !ok {
-			log.Println("Error extracting user ID from JWT token")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
-
-		log.Println("User ID extracted from token:", userID)
 
 		var user models.User
 		if err := db.First(&user, uint(userID)).Error; err != nil {
-			log.Println("Error retrieving user from database:", err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
+
 		c.Set("user", user)
 		c.Next()
 	}

@@ -3,10 +3,10 @@ package services
 import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-	"os"
-	"time"
 )
 
 type JWTService struct {
@@ -15,11 +15,12 @@ type JWTService struct {
 }
 
 type UserService struct {
-	Repo *repositories.UserRepository
+	Repo       *repositories.UserRepository
+	JWTService *JWTService
 }
 
-func NewUserService(repo *repositories.UserRepository) *UserService {
-	return &UserService{Repo: repo}
+func NewUserService(repo *repositories.UserRepository, jwtService *JWTService) *UserService {
+	return &UserService{Repo: repo, JWTService: jwtService}
 }
 
 func (us *UserService) SignUp(email, password, username string) (error, string) {
@@ -39,8 +40,7 @@ func (us *UserService) SignUp(email, password, username string) (error, string) 
 		return err, ""
 	}
 
-	jwtService := NewJWTService(os.Getenv("SECRET_KEY"), time.Hour)
-	token, err := jwtService.GenerateToken(user.ID)
+	token, err := us.JWTService.GenerateToken(user.ID)
 	if err != nil {
 		return err, ""
 	}
@@ -59,8 +59,7 @@ func (us *UserService) SignIn(email, password string) (error, string) {
 		return err, ""
 	}
 
-	jwtService := NewJWTService(os.Getenv("SECRET_KEY"), time.Hour)
-	token, err := jwtService.GenerateToken(user.ID)
+	token, err := us.JWTService.GenerateToken(user.ID)
 	if err != nil {
 		return err, ""
 	}
@@ -76,27 +75,17 @@ func (j *JWTService) GenerateToken(userID int) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = userID
-	// Set expiration time to 90 days
-	expirationTime := time.Now().Add(90 * 24 * time.Hour)
+	expirationTime := time.Now().Add(j.TokenExpiration)
 	claims["exp"] = expirationTime.Unix()
 
-	tokenString, err := token.SignedString([]byte(j.SecretKey))
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
+	return token.SignedString([]byte(j.SecretKey))
 }
 
 func (j *JWTService) ValidateToken(tokenString string) (*jwt.Token, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		if !ok {
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}
 		return []byte(j.SecretKey), nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return token, nil
 }
