@@ -3,18 +3,24 @@ package repositories
 import (
 	"Api-Picture/models"
 	"fmt"
-	"github.com/patrickmn/go-cache"
-	"gorm.io/gorm"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
+	"gorm.io/gorm"
 )
 
 type PictureRepository struct {
 	DB    *gorm.DB
-	Cache *cache.Cache
+	Cache *lru.LRU[string, any]
 }
 
 func NewPictureRepository(db *gorm.DB) *PictureRepository {
-	return &PictureRepository{DB: db, Cache: cache.New(5*time.Minute, 10*time.Minute)}
+	// Holds up to 1000 items; items expire after 5 minutes
+	cache := lru.NewLRU[string, any](1000, nil, 5*time.Minute)
+	return &PictureRepository{
+		DB:    db,
+		Cache: cache,
+	}
 }
 
 func (pr *PictureRepository) GetAll(limit int) ([]models.Pictures, error) {
@@ -26,7 +32,7 @@ func (pr *PictureRepository) GetAll(limit int) ([]models.Pictures, error) {
 	var pictures []models.Pictures
 	err := pr.DB.Select("id, filename, path").Limit(limit).Find(&pictures).Error
 	if err == nil {
-		pr.Cache.Set(cacheKey, pictures, cache.DefaultExpiration)
+		pr.Cache.Add(cacheKey, pictures)
 	}
 	return pictures, err
 }
@@ -40,7 +46,7 @@ func (pr *PictureRepository) GetById(id string) (models.Pictures, error) {
 	var picture models.Pictures
 	err := pr.DB.Where("id = ?", id).Select("id, filename, path").First(&picture).Error
 	if err == nil {
-		pr.Cache.Set(cacheKey, picture, cache.DefaultExpiration)
+		pr.Cache.Add(cacheKey, picture)
 	}
 	return picture, err
 }
@@ -54,16 +60,16 @@ func (pr *PictureRepository) Count() (int64, error) {
 	var count int64
 	err := pr.DB.Model(&models.Pictures{}).Count(&count).Error
 	if err == nil {
-		pr.Cache.Set(cacheKey, count, cache.DefaultExpiration)
+		pr.Cache.Add(cacheKey, count)
 	}
 	return count, err
 }
 
 func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, batchSize int) ([]models.Pictures, error) {
-	cacheKey := fmt.Sprintf("paginated_pictures_%d_%d_%d", lastSeenID, limit, batchSize)
+	cacheKey := fmt.Sprintf("paginated_pictures_%d_%d", lastSeenID, limit)
 
-	if pictures, found := pr.Cache.Get(cacheKey); found {
-		return pictures.([]models.Pictures), nil
+	if val, found := pr.Cache.Get(cacheKey); found {
+		return val.([]models.Pictures), nil
 	}
 
 	var pictures []models.Pictures
@@ -72,7 +78,6 @@ func (pr *PictureRepository) GetPicturesPaginated(lastSeenID int, limit int, bat
 		return nil, err
 	}
 
-	pr.Cache.Set(cacheKey, pictures, cache.DefaultExpiration)
-
+	pr.Cache.Add(cacheKey, pictures)
 	return pictures, nil
 }

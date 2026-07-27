@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"Api-Picture/services"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserController struct {
@@ -61,6 +62,7 @@ func (uc *UserController) SignIn(ctx *gin.Context) {
 	}
 
 	expirationTime := time.Now().Add(90 * 24 * time.Hour) // 90 days
-	ctx.SetCookie("token", token, int(expirationTime.Unix()), "/", "localhost", false, true)
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("token", token, int(expirationTime.Unix()), "/", "", true, true) // secure = true in prod
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "token": token})
 }

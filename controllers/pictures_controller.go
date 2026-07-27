@@ -2,13 +2,12 @@ package controllers
 
 import (
 	"Api-Picture/services"
-	"compress/gzip"
-	"encoding/json"
-	"github.com/gin-gonic/gin"
-	_ "github.com/swaggo/gin-swagger"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/swaggo/gin-swagger"
 )
 
 type PictureController struct {
@@ -97,34 +96,23 @@ func (pc *PictureController) CountPicture(ctx *gin.Context) {
 //	@Param			limit query int false "Limit per page"	default(12)
 //	@Router			/pictures/paginated [get]
 func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
-	// Get query parameters for lastSeenID and limit
-
 	lastSeenID, err := strconv.Atoi(ctx.Query("last_seen_id"))
 	if err != nil {
-		// Handle error, or set default value if not provided
 		lastSeenID = 0
 	}
 
 	limit, err := strconv.Atoi(ctx.Query("limit"))
 	if err != nil {
-		// Handle error, or set default value if not provided
 		limit = 12
 	}
-	err = ctx.BindQuery(&lastSeenID)
-	if err != nil {
-		log.Println(err)
-		return
+	if limit < 1 || limit > 100 {
+		limit = 12
 	}
-	err = ctx.BindQuery(&limit)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+
 	pictures, err := pc.Service.GetPicturesPaginated(lastSeenID, limit)
 	if err != nil {
 		log.Println(err)
-
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 	if len(pictures) == 0 {
@@ -132,24 +120,5 @@ func (pc *PictureController) GetPicturesPaginated(ctx *gin.Context) {
 		return
 	}
 
-	// Compress response using gzip
-	gz := gzip.NewWriter(ctx.Writer)
-	defer func(gz *gzip.Writer) {
-		err := gz.Close()
-		if err != nil {
-			// Handle error
-			ctx.AbortWithStatus(http.StatusInternalServerError)
-		}
-	}(gz)
-
-	ctx.Writer.Header().Set("Content-Encoding", "gzip")
-	ctx.Writer.Header().Set("Content-Type", "application/json")
-
-	// Serialize pictures to JSON and write to the compressed response
-	if err := json.NewEncoder(gz).Encode(pictures); err != nil {
-		// Handle error
-		ctx.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
-	ctx.Status(http.StatusOK)
+	ctx.JSON(http.StatusOK, pictures)
 }

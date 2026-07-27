@@ -7,14 +7,16 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
-
-	//"github.com/gin-contrib/cors"
 	"log"
+	"os"
+	"time"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	//"time"
+	"golang.org/x/time/rate"
 )
 
 // @license.name Apache 2.0
@@ -28,6 +30,13 @@ import (
 // @name Authorization
 // @tokenUrl http://localhost:8080/api/v1/signin
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system env vars")
+	}
+
+	// Initialize rate limiter for authentication routes
+	authLimiter := middlewares.NewRateLimiter(rate.Every(12*time.Second), 5, 10*time.Minute)
+
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 	docs.SwaggerInfo.Title = "Picture API"
@@ -38,42 +47,33 @@ func main() {
 		log.Println(err)
 	}
 
-	db.DB()
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-
-	// Cors middleware
-	router.Use(gin.Recovery())
-	/*corsConfig := cors.Config{
-
-		AllowOrigins:        []string{"http://*"},
-		AllowMethods:        []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:        []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control", "X-Requested-With"},
-		ExposeHeaders:       []string{"Content-Length"},
-		AllowCredentials:    true,
-		AllowWildcard:       true,
-		AllowPrivateNetwork: true,
-		MaxAge:              12 * time.Hour,
-	}*/
-	//	router.Use(cors.New(corsConfig))
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
+	router.Use(middlewares.CORSMiddleware())
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
 	v1 := router.Group("api/v1")
 	{
-		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db)))
+		jwtService := services.NewJWTService(os.Getenv("SECRET_KEY"), 90*24*time.Hour)
+		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db), jwtService))
+
 		signup := v1.Group("signup")
 		{
-			signup.POST("register", userController.SignUp)
+			// Attached rate limiter here
+			signup.POST("register", authLimiter.Middleware(), userController.SignUp)
 		}
+
 		signin := v1.Group("signin")
 		{
-			signin.POST("", userController.SignIn)
+			// Attached rate limiter here
+			signin.POST("", authLimiter.Middleware(), userController.SignIn)
 		}
 
 		picture := v1.Group("pictures")
 		{
-			picture.Use(middlewares.JWTAuthMiddleware(db))
+			picture.Use(middlewares.JWTAuthMiddleware(db, jwtService))
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))
 			picture.GET("", pictureController.GetPictures)
@@ -84,7 +84,7 @@ func main() {
 
 		series := v1.Group("series")
 		{
-			series.Use(middlewares.JWTAuthMiddleware(db))
+			series.Use(middlewares.JWTAuthMiddleware(db, jwtService))
 			seriesController := controllers.NewSeriesController(services.NewSeriesService(repositories.NewSeriesRepository(db)))
 			series.GET("", seriesController.GetAllSeries)
 			series.GET(":name", seriesController.GetSeriesByName)
@@ -92,28 +92,21 @@ func main() {
 
 		videos := v1.Group("videos")
 		{
-			videos.Use(middlewares.JWTAuthMiddleware(db))
+			videos.Use(middlewares.JWTAuthMiddleware(db, jwtService))
 			videosController := controllers.NewVideoController(services.NewVideoService(repositories.NewVideoRepository(db)))
 			videos.GET("", videosController.GetAllVideos)
 			videos.GET(":name", videosController.GetVideoByName)
-
 		}
 
 		health := v1.Group("health")
 		{
 			health.GET("ping", func(c *gin.Context) {
 				if err != nil {
-					c.JSON(500, gin.H{
-						"message": "error",
-					})
+					c.JSON(500, gin.H{"message": "error"})
 					return
 				}
-
-				c.JSON(200, gin.H{
-					"message": "ok",
-				})
+				c.JSON(200, gin.H{"message": "ok"})
 			})
-
 		}
 	}
 
