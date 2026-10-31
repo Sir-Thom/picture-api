@@ -9,11 +9,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
 	"gorm.io/gorm"
 )
 
 func JWTAuthMiddleware(db *gorm.DB, jwtService *services.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		users := lru.NewLRU[uint, models.User](1024, nil, time.Minute)
 		var tokenString string
 
 		// 1. Try extracting token from the Authorization header
@@ -65,11 +67,14 @@ func JWTAuthMiddleware(db *gorm.DB, jwtService *services.JWTService) gin.Handler
 			return
 		}
 
-		var user models.User
-		if err := db.First(&user, uint(userID)).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
-			return
+		user, cached := users.Get(uint(userID))
+		if !cached {
+			if err := db.First(&user, uint(userID)).Error; err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				c.Abort()
+				return
+			}
+			users.Add(uint(userID), user)
 		}
 
 		c.Set("user", user)

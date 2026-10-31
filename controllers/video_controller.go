@@ -3,20 +3,90 @@ package controllers
 import (
 	"Api-Picture/models"
 	"Api-Picture/services"
+	"Api-Picture/streaming"
+	"errors"
+	"io/fs"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
+
+const StreamRoutePrefix = "/api/v1/stream/videos/"
 
 type VideoController struct {
 	Service *services.VideoService
+	Stream  *streaming.Server
 }
 
 // NewVideoController creates a new VideoController
-func NewVideoController(service *services.VideoService) *VideoController {
+func NewVideoController(service *services.VideoService, stream *streaming.Server) *VideoController {
 	return &VideoController{
 		Service: service,
+		Stream:  stream,
+	}
+}
+
+// withStreamURLs fills the virtual stream_url field for each video.
+func (vc *VideoController) withStreamURLs(videos []models.Video) []models.Video {
+	if vc.Stream == nil {
+		return videos
+	}
+	for i := range videos {
+		videos[i].StreamURL = StreamRoutePrefix + strconv.FormatUint(uint64(videos[i].ID), 10)
+	}
+	return videos
+}
+
+// StreamVideo godoc
+//
+//	@Summary		Stream a video
+//	@Description	Streams the video file with HTTP Range support (seeking, resume). Authenticate with the Bearer header or the httpOnly "token" cookie, so it works directly as a <video src>.
+//	@Tags			videos
+//	@Produce		video/mp4
+//	@Param			id		path	int		true	"Video ID"
+//	@Param			Range	header	string	false	"Byte range, e.g. bytes=0-1048575"
+//	@Success		200
+//	@Success		206
+//	@Failure		400,404,416
+//	@Security		BearerAuth
+//	@Router			/stream/videos/{id} [get]
+func (vc *VideoController) StreamVideo(ctx *gin.Context) {
+	if vc.Stream == nil {
+		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": "Video streaming is not configured"})
+		return
+	}
+
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid video ID"})
+		return
+	}
+
+	stored, err := vc.Service.GetVideoPathByID(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Video not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	if err := vc.Stream.Serve(ctx.Writer, ctx.Request, stored); err != nil {
+		switch {
+		case errors.Is(err, fs.ErrNotExist), errors.Is(err, streaming.ErrNotAFile):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Video file not found"})
+		case errors.Is(err, streaming.ErrOutsideRoot):
+			log.Printf("video %d: stored path %q is outside the storage root", id, stored)
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Video file not found"})
+		default:
+			log.Printf("video %d: %v", id, err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Could not open video"})
+		}
+		return
 	}
 }
 

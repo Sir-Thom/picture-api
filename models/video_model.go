@@ -16,4 +16,6 @@ type Video struct {
 	FileSizeFormatted string `gorm:"-" json:"file_size_formatted,omitempty"`
 	DurationFormatted string `gorm:"-" json:"duration_formatted,omitempty"`
 	FileExists        bool   `gorm:"-" json:"file_exists,omitempty"`
+	// StreamURL is the authenticated, Range-capable URL to play this video.
+	StreamURL string `gorm:"-" json:"stream_url,omitempty"`
 }
