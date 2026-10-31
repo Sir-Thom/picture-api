@@ -46,13 +46,13 @@ services:
     restart: always
     container_name: api
     environment:
-      STORAGE_ROOT: /app/storage
+      STORAGE_ROOT: /var/www/storage
       VIDEO_ACCEL_PREFIX: /protected-videos/
     ports:
     - "8080:8080"
     volumes:
       - /srv/picture-api/.env:/app/.env
-      - /var/www/storage/:/app/storage
+      - /var/www/storage/:/var/www/storage
     depends_on:
       - nginx
 
