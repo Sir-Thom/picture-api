@@ -2,7 +2,7 @@
 # Multi-stage, multi-arch build (works on the Pi and on x86).
 
 # ---- build stage: cross-compiles a static binary for the target platform
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS builder
 ARG TARGETOS
 ARG TARGETARCH
 WORKDIR /src
