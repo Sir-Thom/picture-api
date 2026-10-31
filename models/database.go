@@ -39,3 +39,25 @@ func Database() (*gorm.DB, error) {
 
 	return db, nil
 }
+
+// EnsureSearchIndexes creates trigram indexes so the `ILIKE '%name%'`
+// searches on videos and series can use an index instead of scanning every
+// row (a plain B-tree index cannot serve a leading wildcard). It is
+// best-effort: if the database user may not create the pg_trgm extension,
+// a warning is logged and the API keeps working without the index.
+func EnsureSearchIndexes(db *gorm.DB) {
+	if db.Dialector.Name() != "postgres" {
+		return
+	}
+	stmts := []string{
+		"CREATE EXTENSION IF NOT EXISTS pg_trgm",
+		"CREATE INDEX IF NOT EXISTS idx_videos_video_name_trgm ON videos USING gin (video_name gin_trgm_ops)",
+		"CREATE INDEX IF NOT EXISTS idx_series_name_trgm ON series USING gin (name gin_trgm_ops)",
+	}
+	for _, stmt := range stmts {
+		if err := db.Exec(stmt).Error; err != nil {
+			log.Printf("search index setup skipped (%s): %v", stmt, err)
+			return
+		}
+	}
+}

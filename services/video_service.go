@@ -13,6 +13,10 @@ func NewVideoService(repo *repositories.VideoRepository) *VideoService {
 	return &VideoService{Repository: repo}
 }
 
+func (vs *VideoService) GetVideoPathByID(id uint) (string, error) {
+	return vs.Repository.GetVideoPathByID(id)
+}
+
 func (vs *VideoService) GetVideosPaginated(offset, limit int) ([]models.Video, int64, error) {
 	return vs.Repository.GetVideosPaginated(offset, limit)
 }

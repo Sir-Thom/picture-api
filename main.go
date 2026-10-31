@@ -7,7 +7,9 @@ import (
 	"Api-Picture/models"
 	"Api-Picture/repositories"
 	"Api-Picture/services"
+	"Api-Picture/streaming"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -47,16 +49,34 @@ func main() {
 		log.Println(err)
 	}
 
+	// Video files are served from STORAGE_ROOT (default ./storage, which is
+	// /app/storage in the container). Set VIDEO_ACCEL_PREFIX (e.g.
+	// /protected-videos/) to let nginx send the bytes via X-Accel-Redirect.
+	storageRoot := os.Getenv("STORAGE_ROOT")
+	if storageRoot == "" {
+		storageRoot = "storage"
+	}
+	videoStream, streamErr := streaming.NewServer(storageRoot, os.Getenv("VIDEO_ACCEL_PREFIX"))
+	if streamErr != nil {
+		log.Printf("video streaming disabled: %v", streamErr)
+	} else {
+		defer videoStream.Close()
+		log.Printf("video streaming from %s (nginx accel: %v)", storageRoot, videoStream.Accelerated())
+	}
+
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery())
+	// Never gzip video: it is already compressed, gzip breaks byte ranges,
+	// and it forces the whole stream through a compressor.
+	router.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/api/v1/stream/"})))
 	router.Use(middlewares.CORSMiddleware())
-	router.Use(gin.Recovery())
-	router.Use(gin.Logger())
 
 	v1 := router.Group("api/v1")
 	{
 		jwtService := services.NewJWTService(os.Getenv("SECRET_KEY"), 90*24*time.Hour)
+		// One shared instance so all groups share the user cache.
+		authRequired := middlewares.JWTAuthMiddleware(db, jwtService)
 		userController := controllers.NewUserController(services.NewUserService(repositories.NewUserRepository(db), jwtService))
 
 		signup := v1.Group("signup")
@@ -73,7 +93,7 @@ func main() {
 
 		picture := v1.Group("pictures")
 		{
-			picture.Use(middlewares.JWTAuthMiddleware(db, jwtService))
+			picture.Use(authRequired)
 
 			pictureController := controllers.NewPictureController(services.NewPictureService(repositories.NewPictureRepository(db)))
 			picture.GET("", pictureController.GetPictures)
@@ -84,18 +104,29 @@ func main() {
 
 		series := v1.Group("series")
 		{
-			series.Use(middlewares.JWTAuthMiddleware(db, jwtService))
+			series.Use(authRequired)
 			seriesController := controllers.NewSeriesController(services.NewSeriesService(repositories.NewSeriesRepository(db)))
 			series.GET("", seriesController.GetAllSeries)
 			series.GET(":name", seriesController.GetSeriesByName)
 		}
 
+		videosController := controllers.NewVideoController(
+			services.NewVideoService(repositories.NewVideoRepository(db)), videoStream)
+
 		videos := v1.Group("videos")
 		{
-			videos.Use(middlewares.JWTAuthMiddleware(db, jwtService))
-			videosController := controllers.NewVideoController(services.NewVideoService(repositories.NewVideoRepository(db)))
+			videos.Use(authRequired)
 			videos.GET("", videosController.GetAllVideos)
 			videos.GET(":name", videosController.GetVideoByName)
+		}
+
+		// Kept outside /videos so the numeric id route cannot collide with
+		// the /videos/:name search route.
+		stream := v1.Group("stream")
+		{
+			stream.Use(authRequired)
+			stream.GET("videos/:id", videosController.StreamVideo)
+			stream.HEAD("videos/:id", videosController.StreamVideo)
 		}
 
 		health := v1.Group("health")
@@ -115,8 +146,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	models.EnsureSearchIndexes(db)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	log.Println(router.Run(":8080"))
+	srv := &http.Server{
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		// No WriteTimeout: it would cut off long video streams.
+	}
+	log.Println(srv.ListenAndServe())
 }

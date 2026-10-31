@@ -45,6 +45,9 @@ services:
       timeout: 10s
     restart: always
     container_name: api
+    environment:
+      STORAGE_ROOT: /app/storage
+      VIDEO_ACCEL_PREFIX: /protected-videos/
     ports:
     - "8080:8080"
     volumes:
