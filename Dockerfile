@@ -1,22 +1,25 @@
-# Use a multi-platform base image (ARM and AMD64)
+# syntax=docker/dockerfile:1
+# Multi-stage, multi-arch build (works on the Pi and on x86).
 
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS builder
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-WORKDIR /app
+# ---- build stage: cross-compiles a static binary for the target platform
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /src
 
-# Copy the entire current directory into the container's working directory
+# Download modules first so this layer is cached between code changes
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
+# CGO off = fully static binary: no glibc/musl loader needed at runtime.
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags="-s -w" -o /out/picture-api .
 
-# Build the Go application
-RUN go build -o picture-api .
-
-
-# Install curl for debugging purposes (optional)
-RUN apk add --no-cache curl
-
-# Expose the port on which the application listens
+# ---- runtime stage: only the binary (+ curl for the compose healthcheck)
+FROM alpine:3.22
+RUN apk add --no-cache curl ca-certificates tzdata
+WORKDIR /app
+COPY --from=builder /out/picture-api /app/picture-api
 EXPOSE 8080
-
-# Command to run the executable
-CMD ["./picture-api"]
+CMD ["/app/picture-api"]
